@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,6 +64,10 @@ public final class CallTest {
     @GET("/")
     @Streaming
     Call<ResponseBody> getStreamingBody();
+
+    @GET("stream.view?id=300000198&maxBitRate=256&u=ultrasonic_demo&c=Ultrasonic&f=json&v=1.13.0&t=f8ecf9ec77141ec26b81e79c24a80913&s=58C1FF6199DDF722BF9A62182ACF6EE1")
+    @Streaming
+    Call<ResponseBody> getStreamingBody2();
 
     @POST("/")
     Call<String> postString(@Body String body);
@@ -606,6 +611,25 @@ public final class CallTest {
     } catch (IOException e) {
       assertThat(e).hasMessage("unexpected end of stream");
     }
+  }
+
+  @Test
+  public void responseBodyStreams2() throws IOException {
+    long timeStart = Instant.now().getEpochSecond();
+
+    Retrofit retrofit =
+      new Retrofit.Builder()
+        .baseUrl("https://demo.ampache.dev/rest/")
+        .build();
+    Service example = retrofit.create(Service.class);
+
+    Response<ResponseBody> response = example.getStreamingBody2().execute();
+    response.body();
+
+    long duration = Instant.now().getEpochSecond() - timeStart;
+
+    // On a typical network we should have the headers well before 5 seconds have elapsed.
+    assertThat(duration).isLessThan(5);
   }
 
   @Test
